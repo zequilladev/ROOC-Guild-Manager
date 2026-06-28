@@ -14,10 +14,6 @@
 ╚═╝░░░░░╚═╝╚═╝░░╚═╝╚═╝░░╚══╝╚═╝░░╚═╝░╚═════╝░╚══════╝╚═╝░░╚═╝
 
 
-📦 Required dependencies:
-
-pip install customtkinter pillow
-
 📜 License
 
 This project is open-source and free to modify for personal or guild use.
