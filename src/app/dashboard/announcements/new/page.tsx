@@ -1,10 +1,10 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { headers } from 'next/headers'
 
 async function postAnnouncement(formData: FormData) {
   'use server'
-
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/')
@@ -20,13 +20,51 @@ async function postAnnouncement(formData: FormData) {
     redirect('/dashboard/announcements')
   }
 
+  const title   = (formData.get('title') as string).trim()
+  const content = (formData.get('content') as string).trim()
+  const isPinned = formData.get('is_pinned') === 'on'
+
   await supabase.from('announcements').insert({
     guild_id:   membership.guild_id,
     created_by: user.id,
-    title:      (formData.get('title') as string).trim(),
-    content:    (formData.get('content') as string).trim(),
-    is_pinned:  formData.get('is_pinned') === 'on',
+    title,
+    content,
+    is_pinned: isPinned,
   })
+
+  // Discord notification
+  const { data: guild } = await supabase
+    .from('guilds')
+    .select('announcement_channel_id')
+    .eq('id', membership.guild_id)
+    .single()
+
+  console.log('announcement_channel_id:', guild?.announcement_channel_id)
+
+  if (guild?.announcement_channel_id) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('discord_username')
+      .eq('id', user.id)
+      .single()
+
+    const origin = (await headers()).get('origin')
+    const res = await fetch(`${origin}/api/discord/notify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type:        'announcement',
+        channelId:   guild.announcement_channel_id,
+        title,
+        content,
+        isPinned,
+        authorName:  profile?.discord_username ?? 'Unknown',
+      }),
+    })
+
+    console.log('discord notify status:', res.status)
+    console.log('discord notify body:', await res.text())
+  }
 
   redirect('/dashboard/announcements')
 }
@@ -55,14 +93,11 @@ export default async function NewAnnouncementPage() {
         >
           ← Back to announcements
         </Link>
-
         <h1 className="text-2xl font-semibold text-white mb-1">New announcement</h1>
         <p className="text-gray-400 text-sm mb-8">
           All guild members will see this on the Announcements page.
         </p>
-
         <form action={postAnnouncement} className="space-y-5">
-
           <div>
             <label className="block text-sm text-gray-400 mb-1.5">
               Title <span className="text-red-400">*</span>
@@ -76,7 +111,6 @@ export default async function NewAnnouncementPage() {
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors"
             />
           </div>
-
           <div>
             <label className="block text-sm text-gray-400 mb-1.5">
               Content <span className="text-red-400">*</span>
@@ -90,7 +124,6 @@ export default async function NewAnnouncementPage() {
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors resize-none"
             />
           </div>
-
           <label className="flex items-center gap-3 cursor-pointer select-none">
             <input
               name="is_pinned"
@@ -101,10 +134,9 @@ export default async function NewAnnouncementPage() {
               📌 Pin this announcement to the top
             </span>
           </label>
-
           <button
             type="submit"
-            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg transition-colors"
+            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg transition-colors cursor-pointer"
           >
             Post announcement
           </button>

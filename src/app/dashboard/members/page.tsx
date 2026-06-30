@@ -145,9 +145,9 @@ export default async function MembersPage() {
             />
             <button
               type="submit"
-              className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm border border-gray-700 rounded-lg transition-colors"
+              className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm border border-gray-700 rounded-lg transition-colors cursor-pointer"
             >
-              + Add placeholder
+              + Add member
             </button>
           </form>
         )}

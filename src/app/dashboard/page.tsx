@@ -1,11 +1,11 @@
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
+import { InviteCodeCard } from './InviteCodeCard'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Get the user's guild membership + guild info
   const { data: membership } = await supabase
     .from('guild_members')
     .select('role, guilds(id, name, description, invite_code, created_at)')
@@ -13,7 +13,6 @@ export default async function DashboardPage() {
     .eq('is_active', true)
     .single()
 
-  // If no guild, show a prompt to create or join one
   if (!membership) {
     return (
       <div className="flex items-center justify-center h-full min-h-96">
@@ -41,7 +40,6 @@ export default async function DashboardPage() {
 
   const guild = membership.guilds as any
 
-  // Fetch summary stats
   const [{ count: memberCount }, { count: upcomingEvents }, { count: pendingApps }] =
     await Promise.all([
       supabase.from('guild_members').select('*', { count: 'exact', head: true }).eq('guild_id', guild.id).eq('is_active', true),
@@ -52,8 +50,8 @@ export default async function DashboardPage() {
   const isLeaderOrOfficer = ['leader', 'officer'].includes(membership.role)
 
   const stats = [
-    { label: 'Members',          value: memberCount ?? 0,   href: '/dashboard/members' },
-    { label: 'Upcoming events',  value: upcomingEvents ?? 0, href: '/dashboard/events' },
+    { label: 'Members',         value: memberCount ?? 0,   href: '/dashboard/members' },
+    { label: 'Upcoming events', value: upcomingEvents ?? 0, href: '/dashboard/events' },
     ...(isLeaderOrOfficer
       ? [{ label: 'Pending applications', value: pendingApps ?? 0, href: '/dashboard/applications' }]
       : []),
@@ -69,9 +67,9 @@ export default async function DashboardPage() {
         {guild.description && (
           <p className="text-gray-400 mt-1">{guild.description}</p>
         )}
-        <p className="text-xs text-gray-600 mt-2">
-          Invite code: <span className="font-mono text-gray-400">{guild.invite_code}</span>
-        </p>
+        <div className="mt-3">
+          <InviteCodeCard inviteCode={guild.invite_code} />
+        </div>
       </div>
 
       {/* Stats */}
@@ -87,21 +85,6 @@ export default async function DashboardPage() {
           </Link>
         ))}
       </div>
-
-      {/* Quick actions (leaders/officers only) */}
-      {isLeaderOrOfficer && (
-        <div>
-          <h2 className="text-sm text-gray-500 uppercase tracking-wider mb-3">Quick actions</h2>
-          <div className="flex gap-3 flex-wrap">
-            <Link href="/dashboard/events/new" className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors">
-              + Create event
-            </Link>
-            <Link href="/dashboard/announcements/new" className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors">
-              + Post announcement
-            </Link>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

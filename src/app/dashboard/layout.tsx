@@ -1,14 +1,23 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { TopBar } from './TopBar'
+import {
+  LayoutDashboard,
+  Users,
+  Calendar,
+  Megaphone,
+  ClipboardList,
+  Settings,
+} from 'lucide-react'
 
 const navLinks = [
-  { href: '/dashboard',           label: 'Overview',      icon: '⬡' },
-  { href: '/dashboard/members',   label: 'Members',       icon: '👥' },
-  { href: '/dashboard/character', label: 'My Character',  icon: '⚔️' },
-  { href: '/dashboard/events',    label: 'Events',        icon: '📅' },
-  { href: '/dashboard/announcements', label: 'Announcements', icon: '📢' },
-  { href: '/dashboard/applications',  label: 'Applications',  icon: '📋' },
+  { href: '/dashboard',               label: 'Overview',      icon: LayoutDashboard },
+  { href: '/dashboard/members',       label: 'Members',       icon: Users },
+  { href: '/dashboard/events',        label: 'Events',        icon: Calendar },
+  { href: '/dashboard/announcements', label: 'Announcements', icon: Megaphone },
+  { href: '/dashboard/applications',  label: 'Applications',  icon: ClipboardList },
+  { href: '/dashboard/settings',      label: 'Settings',      icon: Settings },
 ]
 
 export default async function DashboardLayout({
@@ -21,93 +30,65 @@ export default async function DashboardLayout({
 
   if (!user) redirect('/')
 
-  // Fetch the user's profile and guild memberships
   const { data: profile } = await supabase
-    .from('users')
+    .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single()
 
   const { data: memberships } = await supabase
     .from('guild_members')
-    .select('role, guilds(id, name)')
+    .select('role, guild_id, guilds(id, name)')
     .eq('user_id', user.id)
     .eq('is_active', true)
 
+  const activeGuildId = (memberships?.[0] as any)?.guild_id
+  const { data: character } = activeGuildId
+    ? await supabase
+        .from('characters')
+        .select('character_name')
+        .eq('user_id', user.id)
+        .eq('guild_id', activeGuildId)
+        .maybeSingle()
+    : { data: null }
+
   return (
-    <div className="min-h-screen flex bg-gray-950 text-gray-100">
+    <div className="h-screen flex flex-col bg-gray-950 text-gray-100 overflow-hidden">
 
-      {/* Sidebar */}
-      <aside className="w-56 shrink-0 flex flex-col bg-gray-900 border-r border-gray-800">
+      {/* Top bar — fixed */}
+      <TopBar
+        avatarUrl={profile?.discord_avatar ?? null}
+        discordUsername={profile?.discord_username ?? null}
+        characterName={character?.character_name ?? null}
+      />
 
-        {/* App name */}
-        <div className="h-14 flex items-center px-5 border-b border-gray-800">
-          <span className="font-semibold text-white">Guild Manager</span>
-        </div>
+      <div className="flex flex-1 overflow-hidden relative">
 
-        {/* Guild switcher (if member of multiple guilds) */}
-        {memberships && memberships.length > 0 && (
-          <div className="px-3 py-3 border-b border-gray-800">
-            <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 px-2">Guild</p>
-            {memberships.map((m: any) => (
-              <div
-                key={m.guilds.id}
-                className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-gray-800"
+        {/* Sidebar — fixed, floats over content */}
+        <aside className="absolute top-0 left-0 bottom-0 z-40 w-12 hover:w-52 flex flex-col bg-gray-900 border-r border-gray-800 shadow-2xl transition-all duration-200 overflow-hidden group">
+
+          {/* Navigation */}
+          <nav className="flex-1 px-2 py-4 space-y-1">
+            {navLinks.map(({ href, label, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
               >
-                <span className="text-sm text-gray-200 truncate">{m.guilds.name}</span>
-                <span className="text-xs text-gray-500 ml-2 capitalize">{m.role}</span>
-              </div>
+                <Icon size={18} className="shrink-0" />
+                <span className="whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  {label}
+                </span>
+              </Link>
             ))}
-          </div>
-        )}
+          </nav>
+        </aside>
 
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {navLinks.map(({ href, label, icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
-            >
-              <span>{icon}</span>
-              {label}
-            </Link>
-          ))}
-        </nav>
-
-        {/* User profile + logout */}
-        <div className="p-3 border-t border-gray-800">
-          <div className="flex items-center gap-3 px-2 py-2">
-            {profile?.discord_avatar ? (
-              <img
-                src={`https://cdn.discordapp.com/avatars/${profile.discord_id}/${profile.discord_avatar}.png`}
-                alt="Avatar"
-                className="w-8 h-8 rounded-full"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-medium">
-                {profile?.discord_username?.[0]?.toUpperCase()}
-              </div>
-            )}
-            <div className="min-w-0">
-              <p className="text-sm text-white truncate">{profile?.discord_username}</p>
-            </div>
-          </div>
-          <form action="/auth/signout" method="POST">
-            <button
-              type="submit"
-              className="w-full mt-1 text-xs text-gray-500 hover:text-gray-300 py-1 transition-colors"
-            >
-              Sign out
-            </button>
-          </form>
-        </div>
-      </aside>
-
-      {/* Main content */}
-      <main className="flex-1 overflow-auto">
-        {children}
-      </main>
+        {/* Main content — only this scrolls */}
+        <main className="flex-1 overflow-y-auto pl-12">
+          {children}
+        </main>
+      </div>
     </div>
   )
 }

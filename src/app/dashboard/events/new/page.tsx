@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { headers } from 'next/headers'
 
 const EVENT_TYPES = [
   { value: 'raid',    label: '⚔️  Raid' },
@@ -29,6 +30,10 @@ async function createEvent(formData: FormData) {
     redirect('/dashboard/events')
   }
 
+  const title       = (formData.get('title') as string).trim()
+  const description = (formData.get('description') as string).trim() || null
+  const eventType   = formData.get('event_type') as string
+  const location    = (formData.get('location') as string)?.trim() || null
   const scheduledAt = new Date(formData.get('scheduled_at') as string).toISOString()
 
   const { data: event, error } = await supabase
@@ -36,9 +41,10 @@ async function createEvent(formData: FormData) {
     .insert({
       guild_id:     membership.guild_id,
       created_by:   user.id,
-      title:        (formData.get('title') as string).trim(),
-      description:  (formData.get('description') as string).trim() || null,
-      event_type:   formData.get('event_type') as string,
+      title,
+      description,
+      event_type:   eventType,
+      location,
       scheduled_at: scheduledAt,
       status:       'upcoming',
     })
@@ -46,6 +52,30 @@ async function createEvent(formData: FormData) {
     .single()
 
   if (error || !event) redirect('/dashboard/events?error=failed')
+
+  // Discord scheduled event
+  const { data: guild } = await supabase
+    .from('guilds')
+    .select('discord_server_id')
+    .eq('id', membership.guild_id)
+    .single()
+
+  if (guild?.discord_server_id) {
+    const origin = (await headers()).get('origin')
+    await fetch(`${origin}/api/discord/notify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type:        'event',
+        guildId:     guild.discord_server_id,
+        title,
+        description,
+        eventType,
+        location,
+        scheduledAt,
+      }),
+    })
+  }
 
   redirect(`/dashboard/events/${event.id}`)
 }
@@ -61,12 +91,10 @@ export default async function NewEventPage() {
     .eq('is_active', true)
     .maybeSingle()
 
-  // Only leaders/officers can create events
   if (!membership || !['leader', 'officer'].includes(membership.role)) {
     redirect('/dashboard/events')
   }
 
-  // Default scheduled time: tomorrow at 20:00
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
   tomorrow.setHours(20, 0, 0, 0)
@@ -88,7 +116,6 @@ export default async function NewEventPage() {
         </p>
 
         <form action={createEvent} className="space-y-5">
-
           <div>
             <label className="block text-sm text-gray-400 mb-1.5">
               Title <span className="text-red-400">*</span>
@@ -108,7 +135,7 @@ export default async function NewEventPage() {
             <select
               name="event_type"
               defaultValue="general"
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
             >
               {EVENT_TYPES.map(t => (
                 <option key={t.value} value={t.value}>{t.label}</option>
@@ -131,6 +158,19 @@ export default async function NewEventPage() {
 
           <div>
             <label className="block text-sm text-gray-400 mb-1.5">
+              Location <span className="text-gray-600">(optional — shown on Discord event)</span>
+            </label>
+            <input
+              name="location"
+              type="text"
+              maxLength={100}
+              placeholder="e.g. Prontera, Classic server"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-gray-400 mb-1.5">
               Description <span className="text-gray-600">(optional)</span>
             </label>
             <textarea
@@ -144,7 +184,7 @@ export default async function NewEventPage() {
 
           <button
             type="submit"
-            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg transition-colors"
+            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg transition-colors cursor-pointer"
           >
             Create event
           </button>

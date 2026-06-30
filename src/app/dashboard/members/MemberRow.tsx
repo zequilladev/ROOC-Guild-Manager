@@ -29,9 +29,7 @@ export function MemberRow({
   const char = m.char
   const isPlaceholder = m.is_placeholder
 
-  const avatarUrl = u?.discord_avatar
-    ? `https://cdn.discordapp.com/avatars/${u.discord_id}/${u.discord_avatar}.png?size=32`
-    : null
+  const avatarUrl = u?.discord_avatar ?? null
 
   const roleColors: Record<string, string> = {
     leader:  'text-amber-400 bg-amber-950 border-amber-800',
@@ -82,7 +80,7 @@ export function MemberRow({
               >
                 <select
                   name="real_member_id"
-                  className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-indigo-500"
+                  className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
                   defaultValue=""
                 >
                   <option value="" disabled>Select member…</option>
@@ -94,14 +92,14 @@ export function MemberRow({
                 </select>
                 <button
                   type="submit"
-                  className="text-xs px-2 py-1 bg-indigo-700 hover:bg-indigo-600 text-white rounded transition-colors"
+                  className="text-xs px-2 py-1 bg-indigo-700 hover:bg-indigo-600 text-white rounded transition-colors cursor-pointer"
                 >
                   Link
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowLinkDropdown(false)}
-                  className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
+                  className="text-xs text-gray-600 hover:text-gray-400 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -111,16 +109,16 @@ export function MemberRow({
                 <button
                   type="button"
                   onClick={() => setShowLinkDropdown(true)}
-                  className="text-xs px-2.5 py-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-400 border border-indigo-800 rounded transition-colors"
+                  className="text-xs px-2.5 py-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-400 border border-indigo-800 rounded transition-colors cursor-pointer"
                 >
                   Link Discord
                 </button>
                 <form action={removePlaceholderAction}>
                   <button
                     type="submit"
-                    className="text-xs px-2.5 py-1 bg-gray-800 hover:bg-red-950 text-gray-500 hover:text-red-400 border border-gray-700 hover:border-red-900 rounded transition-colors"
+                    className="text-xs px-2.5 py-1 bg-gray-800 hover:bg-red-950 text-gray-500 hover:text-red-400 border border-gray-700 hover:border-red-900 rounded transition-colors cursor-pointer"
                     onClick={e => {
-                      if (!confirm(`Remove placeholder "${m.placeholder_name}"?`)) e.preventDefault()
+                      if (!confirm(`Remove "${m.placeholder_name}"?`)) e.preventDefault()
                     }}
                   >
                     Remove
@@ -170,7 +168,7 @@ export function MemberRow({
                 <form action={promoteAction}>
                   <button
                     type="submit"
-                    className="text-xs px-2.5 py-1 bg-blue-950 hover:bg-blue-900 text-blue-400 border border-blue-800 rounded transition-colors"
+                    className="text-xs px-2.5 py-1 bg-blue-950 hover:bg-blue-900 text-blue-400 border border-blue-800 rounded transition-colors cursor-pointer"
                   >
                     Promote
                   </button>
@@ -179,7 +177,7 @@ export function MemberRow({
                 <form action={demoteAction}>
                   <button
                     type="submit"
-                    className="text-xs px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-400 border border-gray-700 rounded transition-colors"
+                    className="text-xs px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-400 border border-gray-700 rounded transition-colors cursor-pointer"
                   >
                     Demote
                   </button>
@@ -188,7 +186,7 @@ export function MemberRow({
               <form action={kickAction}>
                 <button
                   type="submit"
-                  className="text-xs px-2.5 py-1 bg-gray-800 hover:bg-red-950 text-gray-500 hover:text-red-400 border border-gray-700 hover:border-red-900 rounded transition-colors"
+                  className="text-xs px-2.5 py-1 bg-gray-800 hover:bg-red-950 text-gray-500 hover:text-red-400 border border-gray-700 hover:border-red-900 rounded transition-colors cursor-pointer"
                   onClick={e => {
                     if (!confirm(`Kick ${u?.discord_username} from the guild?`)) e.preventDefault()
                   }}

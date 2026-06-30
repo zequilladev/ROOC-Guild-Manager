@@ -3,9 +3,9 @@
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: string; next?: string }>
 }) {
-  const { error } = await searchParams
+  const { error, next } = await searchParams
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-950">
       <div className="w-full max-w-sm px-6 py-10 bg-gray-900 rounded-2xl border border-gray-800 text-center space-y-6">
@@ -23,7 +23,7 @@ export default async function LoginPage({
           </p>
         )}
 
-        <form action="/auth/discord" method="POST">
+        <form action={next ? `/auth/discord?next=${encodeURIComponent(next)}` : '/auth/discord'} method="POST">
           <button
             type="submit"
             className="w-full flex items-center justify-center gap-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 px-4 rounded-lg transition-colors"

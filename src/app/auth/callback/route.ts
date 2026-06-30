@@ -8,9 +8,20 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
+      // Save the Discord provider token to profiles
+      const providerToken = data.session?.provider_token
+      const userId = data.session?.user?.id
+
+      if (providerToken && userId) {
+        await supabase
+          .from('profiles')
+          .update({ provider_token: providerToken })
+          .eq('id', userId)
+      }
+
       return NextResponse.redirect(`${origin}${next}`)
     }
   }

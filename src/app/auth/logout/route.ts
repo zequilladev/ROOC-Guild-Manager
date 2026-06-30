@@ -4,7 +4,7 @@ import { headers } from 'next/headers'
 
 export async function POST() {
   const supabase = await createClient()
-  const origin = headers().get('origin')
+  const origin = (await headers()).get('origin')
 
   await supabase.auth.signOut()
 

@@ -3,14 +3,9 @@ import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 
 // POST — used by the existing login button on the main page
-export async function POST() {
-  return initiateOAuth(null)
-}
-
-// GET — used by /apply/[invite_code] when user isn't logged in
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const next = searchParams.get('next')
+export async function POST(request: Request) {
+  const formData = await request.formData()
+  const next = formData.get('next') as string | null
   return initiateOAuth(next)
 }
 
@@ -26,7 +21,7 @@ async function initiateOAuth(next: string | null) {
     provider: 'discord',
     options: {
       redirectTo: callbackUrl,
-      scopes: 'identify email',
+      scopes: 'identify email guilds',
     },
   })
 

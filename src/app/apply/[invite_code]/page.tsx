@@ -104,12 +104,15 @@ export default async function ApplyPage({
         {!user ? (
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center space-y-4">
             <p className="text-gray-300 text-sm">You need to sign in with Discord before applying.</p>
-            <Link
-              href={`/auth/discord?next=/apply/${invite_code}`}
-              className="inline-block px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              Sign in with Discord
-            </Link>
+            <form action="/auth/discord" method="POST">
+              <input type="hidden" name="next" value={`/apply/${invite_code}`} />
+              <button
+                type="submit"
+                className="inline-block px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                Sign in with Discord
+              </button>
+            </form>
           </div>
         ) : (
           <form action={submitApplication} className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-5">

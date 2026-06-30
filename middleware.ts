@@ -36,7 +36,9 @@ export async function middleware(request: NextRequest) {
   // Logged-in users skip the login page and go straight to dashboard
   if (user && request.nextUrl.pathname === '/') {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    const next = request.nextUrl.searchParams.get('next')
+    url.pathname = next ?? '/dashboard'
+    url.search = ''
     return NextResponse.redirect(url)
   }
 
